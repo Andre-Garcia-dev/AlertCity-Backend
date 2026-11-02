@@ -10,3 +10,7 @@
 
 # Entorno y secretos
 .env
+
+#IA
+/infrastructure
+/Documentation
