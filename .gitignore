@@ -1,0 +1,12 @@
+# Java / Spring Boot
+/.idea
+/target/
+/backend/target/
+/backend/*.jar
+/backend/*.war
+/backend/.mvn/
+/backend/mvnw
+/backend/mvnw.cmd
+
+# Entorno y secretos
+.env
