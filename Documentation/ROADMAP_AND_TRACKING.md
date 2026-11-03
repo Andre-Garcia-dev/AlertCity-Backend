@@ -17,7 +17,7 @@ Este documento desglosa el trabajo realizado, en progreso y planificado para **A
 timeline
     title Plan de Evolución del Proyecto AlertCity
     Etapa 0 (Completada) : Configuración Inicial : Docker & PostGIS : Modelos JPA Base
-    Etapa 1 (Hito Inmediato: Demo Local) : Endpoints Básicos : Conexión LAN Móvil-Backend : Visualización en BD : URLs de Fotos Simuladas
+    Etapa 1 (Hito Inmediato: Demo Local) : Endpoints BFF & CRUD : Conexión LAN Móvil-Backend : Visualización en BD : URLs de Fotos Simuladas
     Etapa 2 (Backend Robusto) : Autenticación JWT : Validaciones Jakarta : Consultas Espaciales : Carga de Evidencia Multimedia
     Etapa 3 (Cliente Móvil Offline-First) : Room Database : Sincronización WorkManager : Manejo de Red & GPS
     Etapa 4 (Nube Microsoft Azure) : VM Ubuntu : Nginx HTTPS : Docker en Prod : Seguridad & Backups
@@ -41,6 +41,7 @@ timeline
 
 > **Alcance de la Demo:**
 > - Permitir el registro de reportes desde la aplicación móvil en Kotlin.
+> - Cargar de golpe el Dashboard (`GET /api/v1/dashboard`) con métricas, mis reportes y feed comunitario.
 > - Mostrar y listar los reportes persistidos en la base de datos PostgreSQL/PostGIS.
 > - Conexión del dispositivo móvil físico o emulador a través de la red Wi-Fi local hacia la IP del equipo anfitrión (`http://192.168.1.6:8080`).
 > - **Evidencias fotográficas:** Para esta etapa de la demo, las fotos **no** se suben como binarios; se manejan mediante URLs simuladas / placeholder.
@@ -49,13 +50,14 @@ timeline
 | ID | Área | Tarea / Entregable | Estado | Detalle y Criterios de Aceptación |
 | :--- | :--- | :--- | :---: | :--- |
 | **1.1** | Base de Datos | Migración con Dataset enriquecido (`V2__seed_test_data.sql`) | `[X]` | Inserción de catálogo de usuarios de prueba y más de 20 reportes realistas con coordenadas PostGIS en la zona. |
-| **1.2** | Backend | DTOs de Entrada y Salida para la Demo (`ReportRequestDTO`, `ReportResponseDTO`) | `[ ]` | Creación de Records en Java 21 para transferir latitud/longitud decimales y serializar a/desde el cliente Kotlin. |
-| **1.3** | Backend | Servicio y Controlador de Reportes (`ReportController`, `ReportService`) | `[ ]` | Endpoints `POST /api/v1/reports` (crear reporte) y `GET /api/v1/reports` (listar reportes existentes). |
-| **1.4** | Backend | Conversor Geoespacial (Lat/Lng $\leftrightarrow$ JTS Point PostGIS) | `[ ]` | Utilidad para construir `Point(longitud, latitud)` con SRID 4326 a partir de los datos recibidos de la app móvil. |
-| **1.5** | Backend | Configuración de CORS y acceso abierto para endpoints de Demo | `[ ]` | Permitir peticiones desde cualquier origen local sin bloqueos de Spring Security durante la demo. |
-| **1.6** | Infraestructura | Verificación de Firewall de Windows y conectividad LAN | `[ ]` | Asegurar que el puerto 8080 permita tráfico entrante desde la IP `192.168.1.6` para dispositivos en la misma red Wi-Fi. |
-| **1.7** | Cliente Móvil | Integración Retrofit básica en Kotlin para Demo | `[ ]` | Configuración del `baseUrl = "http://192.168.1.6:8080/api/v1/"` y llamada al endpoint de creación y listado. |
-| **1.8** | Validación | Prueba de extremo a extremo: Registro en App $\to$ Verificación en pgAdmin | `[ ]` | Crear un reporte en el celular y verificar la inserción inmediata del punto geográfico en pgAdmin. |
+| **1.2** | Backend | DTOs de Entrada y Salida para la Demo | `[X]` | Records `CreateReportRequest`, `ReportResponse` y `DashboardResponse` creados y compilando. |
+| **1.3** | Backend | Servicios de Lógica de Negocio (`ReportService`, `DashboardService`) | `[X]` | Métodos de creación, mapeo geoespacial, cálculo de métricas de reportes activos y resueltos. |
+| **1.4** | Backend | Controladores REST (`ReportController`, `DashboardController`) | `[X]` | Endpoints `POST /api/v1/reports`, `GET /api/v1/reports` y `GET /api/v1/dashboard` estructurados. |
+| **1.5** | Backend | Conversor Geoespacial (Lat/Lng $\leftrightarrow$ JTS Point PostGIS) | `[X]` | Utilidad para construir `Point(longitud, latitud)` con SRID 4326 a partir de los datos recibidos de la app móvil. |
+| **1.6** | Backend | Configuración de Seguridad Abierta para Demo (`SecurityConfig`) | `[/]` | **Pendiente de agregar en código**: Permitir `permitAll()` en `/api/v1/**` y deshabilitar `csrf()` para evitar error HTTP 401 / 403. |
+| **1.7** | Infraestructura | Verificación de Firewall de Windows y conectividad LAN | `[ ]` | Asegurar que el puerto 8080 permita tráfico entrante desde la IP `192.168.1.6` para dispositivos en la misma red Wi-Fi. |
+| **1.8** | Cliente Móvil | Integración Retrofit básica en Kotlin para Demo | `[ ]` | Configuración del `baseUrl = "http://192.168.1.6:8080/api/v1/"`, `usesCleartextTraffic="true"`, interfaces y modelos. |
+| **1.9** | Validación | Prueba de extremo a extremo: Registro en App $\to$ Verificación en pgAdmin | `[ ]` | Crear un reporte en el celular y verificar la inserción inmediata del punto geográfico en pgAdmin. |
 
 ---
 

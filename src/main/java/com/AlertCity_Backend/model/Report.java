@@ -13,7 +13,7 @@ public class Report {
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(name = "id_report", updatable = false, nullable = false)
-    private UUID id;
+    private UUID reportId;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "id_user", nullable = false)
@@ -100,11 +100,11 @@ public class Report {
 
     // Getters y Setters
     public UUID getId() {
-        return id;
+        return reportId;
     }
 
-    public void setId(UUID id) {
-        this.id = id;
+    public void setId(UUID reportId) {
+        this.reportId = reportId;
     }
 
     public User getUser() {
