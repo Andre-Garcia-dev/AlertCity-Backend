@@ -18,7 +18,7 @@ timeline
     title Plan de Evolución del Proyecto AlertCity
     Etapa 0 (Completada) : Configuración Inicial : Docker & PostGIS : Modelos JPA Base
     Etapa 1 (Completada en Backend) : Endpoints BFF & CRUD : Persistencia PostGIS : Contratos API & Guía Móvil : SecurityConfig Demo
-    Etapa 2 (En Progreso - Foco Activo) : Autenticación JWT (2.1) : Roles & RBAC (2.2) : Consultas Espaciales (2.3) : Manejo de Fotos (2.5)
+    Etapa 2 (Completada en Backend) : Autenticación JWT (2.1) : Roles & RBAC (2.2) : PostGIS & Filtros (2.3-2.4) : Fotos, RFC 7807 & Swagger (2.5-2.7)
     Etapa 3 (Cliente Móvil Offline-First) : Room Database : Sincronización WorkManager : Manejo de Red & GPS
     Etapa 4 (Nube Microsoft Azure) : VM Ubuntu : Nginx HTTPS : Docker en Prod : Seguridad & Backups
 ```
@@ -72,7 +72,13 @@ timeline
 
 ---
 
-## Etapa 2: Estructuración Avanzada del Backend (En Progreso - Foco Activo)
+## Etapa 2: Estructuración Avanzada del Backend (Completada en Backend)
+
+> **Resultado del Hito:**
+> - Autenticación stateless con **JWT (JJWT 0.12.6)**: Access Token (1 hora) y Refresh Token (30 días) en `AuthController` (`/api/v1/auth/register`, `/login`, `/refresh`).
+> - Control de acceso basado en roles (**RBAC**) con `@EnableMethodSecurity` y segregación entre `CIUDADANO`, `ADMIN` y operadores departamentales (`PATCH /api/v1/reports/{id}/state`).
+> - Consultas geoespaciales PostGIS (`GET /api/v1/reports/nearby` usando `ST_DWithin` sobre el índice GiST), filtros dinámicos con `ReportSpecification` y paginación (`GET /api/v1/reports/page`).
+> - Evidencias fotográficas reales (`POST /api/v1/reports/{id}/media`, migración Flyway `V3__add_report_image_url.sql`), manejo global de errores **RFC 7807 (`ProblemDetail`)** y documentación interactiva **OpenAPI 3 / Swagger UI**.
 
 ### Desglose y Plan de Ejecución para 2.1 y 2.2
 
@@ -102,25 +108,25 @@ flowchart TD
 
 | ID | Área | Tarea / Entregable | Estado | Detalle y Criterios de Aceptación |
 | :--- | :--- | :--- | :---: | :--- |
-| **2.1** | Backend | **Módulo de Seguridad y Autenticación JWT** | `[/]` | **En estructuración activa**. Implementación de autenticación sin estado mediante tokens JWT con JJWT 0.12.6. |
-| 2.1.1 | Configuración | Parámetros JWT en `application.properties` | `[ ]` | Definición de `jwt.secret` (clave HMAC-SHA de al menos 256 bits), `jwt.access-token-expiration` (1 hora = 3600000 ms) y `jwt.refresh-token-expiration` (30 días = 2592000000 ms). |
-| 2.1.2 | DTOs | DTOs de Autenticación | `[ ]` | Records: `RegisterRequest` (username, email, password, firstName, lastName), `LoginRequest` (user/email, password), `AuthResponse` (accessToken, refreshToken, tokenType, user info), `RefreshTokenRequest` (refreshToken). |
-| 2.1.3 | Dominio | Implementación `UserDetails` en Entidad `User` | `[ ]` | Adaptar `User.java` (o clase `CustomUserDetails`) para implementar `UserDetails`, mapeando `rol` a `GrantedAuthority` con prefijo `ROLE_` y banderas booleanas de cuenta activa. |
-| 2.1.4 | Persistencia | Métodos de Búsqueda en `UserRepository` | `[ ]` | Métodos `findByUser(String username)`, `findByEmail(String email)`, `existsByUser(String username)` y `existsByEmail(String email)`. |
-| 2.1.5 | Seguridad | Servicio Criptográfico `JwtService` | `[ ]` | Generación de tokens firmados HMAC-SHA256 (`Keys.hmacShaKeyFor`), extracción de claims (sujeto, roles, expiración), validación de firma y fecha de caducidad. |
-| 2.1.6 | Seguridad | Filtro HTTP `JwtAuthenticationFilter` | `[ ]` | Extiende `OncePerRequestFilter`: extrae `Bearer <token>` del header `Authorization`, valida token vía `JwtService`, carga `UserDetails` y setea el contexto en `SecurityContextHolder`. |
-| 2.1.7 | Negocio | Servicio de Autenticación `AuthService` | `[ ]` | Registro de nuevos usuarios con cifrado `BCryptPasswordEncoder`, login usando `AuthenticationManager`, y flujo de renovación con refresh token. |
-| 2.1.8 | Controladores | Controlador REST `AuthController` | `[ ]` | Endpoints `POST /api/v1/auth/register`, `POST /api/v1/auth/login` y `POST /api/v1/auth/refresh` con respuestas HTTP 200/201 y 400/401 documentadas. |
-| **2.2** | Backend | **Roles y Control de Acceso Basado en Roles (RBAC)** | `[/]` | **En estructuración activa**. Segregación estricta de permisos entre ciudadanos y operadores/administradores municipales. |
+| **2.1** | Backend | **Módulo de Seguridad y Autenticación JWT** | `[X]` | **Completado**. Implementación de autenticación sin estado mediante tokens JWT con JJWT 0.12.6. |
+| 2.1.1 | Configuración | Parámetros JWT en `application.properties` | `[X]` | Definición de `jwt.secret` (clave HMAC-SHA de al menos 256 bits), `jwt.access-token-expiration` (1 hora = 3600000 ms) y `jwt.refresh-token-expiration` (30 días = 2592000000 ms). |
+| 2.1.2 | DTOs | DTOs de Autenticación | `[X]` | Records: `RegisterRequest` (username, email, password, firstName, lastName), `LoginRequest` (usernameOrEmail, password), `AuthResponse` (accessToken, refreshToken, tokenType, expiresIn, user info), `RefreshTokenRequest` (refreshToken). |
+| 2.1.3 | Dominio | Implementación `UserDetails` en Entidad `User` | `[X]` | `User.java` implementa `UserDetails`, mapeando `rol` a `GrantedAuthority` con prefijo `ROLE_` y banderas booleanas de cuenta activa. |
+| 2.1.4 | Persistencia | Métodos de Búsqueda en `UserRepository` | `[X]` | Métodos `findByUser`, `findByEmail`, `findByUserOrEmail`, `existsByUser` y `existsByEmail`. |
+| 2.1.5 | Seguridad | Servicio Criptográfico `JwtService` | `[X]` | Generación de tokens firmados HMAC-SHA256 (`Keys.hmacShaKeyFor`), extracción de claims (sujeto, roles, `tokenType`, expiración), validación de firma y fecha de caducidad. |
+| 2.1.6 | Seguridad | Filtro HTTP `JwtAuthenticationFilter` | `[X]` | Extiende `OncePerRequestFilter`: extrae `Bearer <token>` del header `Authorization`, valida access token vía `JwtService`, carga `UserDetails` y setea el contexto en `SecurityContextHolder`. |
+| 2.1.7 | Negocio | Servicio de Autenticación `AuthService` | `[X]` | Registro de nuevos usuarios con cifrado `BCryptPasswordEncoder`, login usando `AuthenticationManager`, y flujo de renovación con refresh token. |
+| 2.1.8 | Controladores | Controlador REST `AuthController` | `[X]` | Endpoints `POST /api/v1/auth/register`, `POST /api/v1/auth/login` y `POST /api/v1/auth/refresh` con respuestas HTTP 200/201 y 400/401/409 documentadas. |
+| **2.2** | Backend | **Roles y Control de Acceso Basado en Roles (RBAC)** | `[X]` | **Completado**. Segregación estricta de permisos entre ciudadanos y operadores/administradores municipales. |
 | 2.2.1 | Dominio | Catálogo de Roles Jerárquico en `Rol.java` | `[X]` | Enum `Rol` configurado con `CIUDADANO`, `ADMIN` y áreas operativas (`VIALIDAD`, `ALUMBRADO`, `AGUA_DRENAJE`, `LIMPIEZA`, `SEGURIDAD`, `AREAS_VERDES`, `ANIMALES`). |
-| 2.2.2 | Seguridad | Actualización de `SecurityConfig` (Stateless + Filtros) | `[ ]` | Configuración de `SessionCreationPolicy.STATELESS`, registro de `JwtAuthenticationFilter` antes de `UsernamePasswordAuthenticationFilter`, y `AuthenticationProvider` con DAO. |
-| 2.2.3 | Seguridad | Habilitación de Seguridad a Nivel de Método | `[ ]` | Anotación `@EnableMethodSecurity(prePostEnabled = true)` en configuración de seguridad. |
-| 2.2.4 | Seguridad | Autorización de Endpoints por Roles | `[ ]` | Reglas en filterChain: `/api/v1/auth/**` público; `/api/v1/reports/**` y `/api/v1/dashboard` requieren `isAuthenticated()`; endpoints de cambio de estado o reasignación requieren `hasRole('ADMIN')` o roles operativos correspondientes. |
-| **2.3** | Backend | Consultas Geoespaciales Avanzadas con PostGIS | `[ ]` | Endpoint `GET /api/v1/reports/nearby?lat=...&lng=...&radiusKm=...` usando `ST_DWithin` sobre el índice GiST. |
-| **2.4** | Backend | Filtros de Reportes por Categoría, Estado y Rango de Fechas | `[ ]` | Soporte para paginación (`Pageable`) y especificaciones de búsqueda dinámica (`JpaSpecificationExecutor`). |
-| **2.5** | Backend | Módulo de Manejo de Evidencias Fotográficas Reales | `[ ]` | Endpoint `POST /api/v1/reports/{id}/media` con `MultipartFile`, validación de tipo de imagen (JPEG/PNG) y tamaño máximo. |
-| **2.6** | Backend | Manejo Global de Errores (`@ControllerAdvice`) | `[ ]` | Respuestas de error estandarizadas (`ProblemDetails` / RFC 7807) para errores 400, 401, 403, 404 y 500. |
-| **2.7** | Backend | Documentación con Swagger UI / OpenAPI 3 | `[ ]` | Anotaciones `@Operation`, esquemas de DTOs documentados accesibles en `/swagger-ui.html` con soporte para autorización Bearer. |
+| 2.2.2 | Seguridad | Actualización de `SecurityConfig` (Stateless + Filtros) | `[X]` | Configuración de `SessionCreationPolicy.STATELESS`, registro de `JwtAuthenticationFilter` antes de `UsernamePasswordAuthenticationFilter` y `HandlerExceptionResolver` para 401/403. |
+| 2.2.3 | Seguridad | Habilitación de Seguridad a Nivel de Método | `[X]` | Anotación `@EnableMethodSecurity(prePostEnabled = true)` en `SecurityConfig`. |
+| 2.2.4 | Seguridad | Autorización de Endpoints por Roles | `[X]` | `/api/v1/auth/**` público; `/api/v1/reports/**` y `/api/v1/dashboard` requieren `isAuthenticated()`; `PATCH /api/v1/reports/{id}/state` restringido a `ADMIN` y operadores del área correspondiente. |
+| **2.3** | Backend | Consultas Geoespaciales Avanzadas con PostGIS | `[X]` | Endpoint `GET /api/v1/reports/nearby?lat=...&lng=...&radiusKm=...` usando `ST_DWithin` y `ST_Distance` sobre el índice GiST. |
+| **2.4** | Backend | Filtros de Reportes por Categoría, Estado y Rango de Fechas | `[X]` | Soporte para paginación (`GET /api/v1/reports/page` con `Pageable`) y especificaciones dinámicas (`ReportSpecification` + `JpaSpecificationExecutor`). |
+| **2.5** | Backend | Módulo de Manejo de Evidencias Fotográficas Reales | `[X]` | Migración `V3__add_report_image_url.sql`, `MediaStorageService` y endpoint `POST /api/v1/reports/{id}/media` con `MultipartFile` (JPEG/PNG/WebP, máx. 10 MB). |
+| **2.6** | Backend | Manejo Global de Errores (`@RestControllerAdvice`) | `[X]` | `GlobalExceptionHandler` con respuestas estandarizadas **RFC 7807 (`ProblemDetail`)** para códigos 400, 401, 403, 404, 409, 413 y 500. |
+| **2.7** | Backend | Documentación con Swagger UI / OpenAPI 3 | `[X]` | `OpenApiConfig` con soporte Bearer JWT y anotaciones `@Operation`/`@Schema` accesibles en `/swagger-ui.html`. |
 
 ---
 
@@ -169,3 +175,4 @@ flowchart TD
 | **02/11/2026** | 1.0 | Antigravity AI / Equipo Backend | Creación inicial del roadmap con desglose de Etapas 0 a 5. |
 | **02/11/2026** | 1.1 | Antigravity AI / Equipo Backend | Actualización tras implementación de DTOs, servicios y controladores de Demo. |
 | **03/11/2026** | 1.2 | Antigravity AI / Equipo Backend | Cierre de Etapa 1 en Backend (`SecurityConfig` completado, contratos API y guía LAN). Desglose exhaustivo de tareas 2.1 y 2.2 para autenticación JWT y RBAC. |
+| **22/11/2026** | 2.0 | Antigravity AI / Equipo Backend | Finalización de la Etapa 2 (tareas `2.1` a `2.7`): autenticación JWT, RBAC, consultas espaciales PostGIS (`nearby`), filtros con paginación, evidencias fotográficas (`V3` + multipart), manejo global de errores RFC 7807 y Swagger UI / OpenAPI 3. |

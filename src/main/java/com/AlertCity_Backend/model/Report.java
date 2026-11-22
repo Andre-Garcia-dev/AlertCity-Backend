@@ -49,6 +49,9 @@ public class Report {
     @Column(nullable = false, length = 50)
     private ReportState state;
 
+    @Column(name = "image_url", length = 500)
+    private String imageUrl;
+
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
 
@@ -177,6 +180,14 @@ public class Report {
 
     public void setState(ReportState state) {
         this.state = state;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
+    public void setImageUrl(String imageUrl) {
+        this.imageUrl = imageUrl;
     }
 
     public LocalDateTime getCreatedAt() {
